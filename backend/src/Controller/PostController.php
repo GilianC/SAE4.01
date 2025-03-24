@@ -13,28 +13,40 @@ use App\Entity\Post;
 
 final class PostController extends AbstractController
 {
-    #[Route('/api/posts', name: 'api_posts_index', methods: ['GET'])]
-    public function index(SerializerInterface $serializer, PostRepository $postRepository): Response
+    #[Route('/posts', name: 'posts.index', methods: ['GET'])]
+    public function index(Request $request, PostRepository $postRepository): Response
     {
-        $posts = $postRepository->findAll();
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = 50;
+        $offset = ($page - 1) * $limit;
 
-        $jsonContent = $serializer->serialize($posts, 'json');
-        // $jsonContent contains {"name":"Jane Doe","age":39,"sportsperson":false}
+        $paginator = $postRepository->paginateAllOrderedByLatest($offset, $limit);
+        $totalPostsCount = $paginator->count();
 
-        return JsonResponse::fromJsonString($jsonContent);
+        $previousPage = $page > 1 ? $page - 1 : null;
+        $nextPage = ($offset + $limit) < $totalPostsCount ? $page + 1 : null;
+
+        return $this->json([
+            'posts' => iterator_to_array($paginator),
+            'previous_page' => $previousPage,
+            'next_page' => $nextPage,
+        ]);
     }
-
-
     #[Route('/api/posts/{id}', name: 'api_posts_show', methods: ['GET', 'HEAD'])]
-    public function show(int $id, PostRepository $postRepository,SerializerInterface $serializer): JsonResponse
+    public function show(int $id, PostRepository $postRepository): JsonResponse
     {
         $post = $postRepository->find($id);
-        $jsonContent = $serializer->serialize($post, 'json');
-   
-        return JsonResponse::fromJsonString($jsonContent);
+        if (!$post) {
+            return $this->json([
+                'message' => 'Post introuvable'
+            ], 404);
+        }
+
+        return $this->json([
+            'post' => $post
+        ]);
     }
 
-    //POST /api/posts : Création d'une nouvelle ressource
     #[Route('/api/posts/', name: 'api_posts_create', methods: ['POST'])]
     public function create(Request $request, SerializerInterface $serializer): JsonResponse
     {

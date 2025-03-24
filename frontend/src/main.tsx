@@ -10,7 +10,8 @@ import Home from './routes/home.tsx';
 import Admin from './routes/admin.tsx';
 // import OurTeam, {loader as tLoader} from './routes/team.jsx';
 import './index.css';
-
+// const response = await fetch('http://localhost:8080/posts?page=1');
+// console.log(await response.json());
 
 const router = createBrowserRouter([
   {

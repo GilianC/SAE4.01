@@ -1,8 +1,12 @@
+
+
 export interface User {
-    email: string;
-    pseudo: string;
-    password: string;
-  }
+  id: number;
+  email: string;
+  pseudo: string;
+  api_token: string;
+  password: string;
+}
   
   const STORAGE_KEY = "users_db";
   

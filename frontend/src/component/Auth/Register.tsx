@@ -4,26 +4,68 @@ import { addUser } from '../../lib/data/User';
 import { useNavigate } from "react-router-dom";
 import Button from "../../ui/Common/Button";
 import Input from '../../ui/Common/Input';
+import { User } from '../../lib/data/User';
+
+
 
 export default function RegisterUI() {
     const navigate = useNavigate();
-    const [form, setForm] = useState({
-        email: "",
-        pseudo: "",
-        password: "",
-        confirmPassword: "",
-      });
+    const [email, setEmail] = useState<string>("");
+    const [pseudo, setPseudo] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>(""); // Ajout de l'état
+    const [message, setMessage] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
     
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setMessage(null);
+
+        // ✅ Vérifier que les mots de passe correspondent
+        if (password !== confirmPassword) {
+            setMessage("Les mots de passe ne correspondent pas.");
+            return;
+        }
+
+        setLoading(true);
+
+        const requestData = { email, pseudo, password };
+        console.log("Envoi de la requête avec :", requestData);
+    
+        try {
+            const response = await fetch("http://localhost:8000/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            });
+    
+            const data = await response.json();
+            console.log("Réponse reçue :", data);
+    
+            if (response.ok) {
+                setMessage(`Inscription réussie ! Token : ${data.api_token}`);
+            } else {
+                setMessage(`Erreur : ${data.message}`);
+            }
+        } catch (error) {
+            console.error("Erreur de requête :", error);
+            setMessage("Erreur lors de la connexion au serveur.");
+        }
+    };
+
     const passwdValidator = (password: string): boolean => {
         const isValidLength = password.length >= 8;
         const hasNumber = /\d/.test(password);
         return isValidLength && hasNumber;
     };
     const confirmPasswords = (): boolean => {
-        return form.password === form.confirmPassword;
+        return password === confirmPassword;
     };
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+ return null;
     };
 
 
@@ -39,27 +81,10 @@ export default function RegisterUI() {
     const [errorMessage, setErrorMessage] = useState<string>("");
 
     const checkAllFields = (): boolean => {
-        return form.email !== "" && form.pseudo !== "" && form.password !== "" && form.confirmPassword !== "";
+        return email !== "" && pseudo !== "" && password !== "" && confirmPassword !== "";
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        if(checkAllFields()==true){
-            navigate("/login");
-            addUser({ email: form.email, pseudo: form.pseudo, password: form.password });
-            return;}
-            e.preventDefault();
-        if (form.password !== form.confirmPassword) {
-
-          return;
-        }
-        if (!addUser({ email: form.email, pseudo: form.pseudo, password: form.password })) {
-
-          return;
-        }
-    
-    console.log('click')
-
-      };
+  
     
     return (
         <div
@@ -81,24 +106,24 @@ export default function RegisterUI() {
                         <Input
                             type="email"
                             name="email"
-                            value={form.email}
-                            onChange={handleChange}
+                            value={email}
+                            onChange= {(e) => setEmail(e.target.value)}
                             placeholder="Mail"
                             className={`w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 ${
-                                validateEmail(form.email) || !form.email
+                                validateEmail(email) || !email
                                     ? "focus:ring-blue-500"
                                     : "focus:ring-red-500"
                             }`}
                         />
-                        {form.email && !validateEmail(form.email) && (
+                        {email && !validateEmail(email) && (
                             <p className="text-red-500 text-xs mt-1">Adresse mail invalide</p>
                         )}
                     </div>
                     <Input
             type="text"
             name="pseudo"
-            value={form.pseudo}
-            onChange={handleChange}
+            value={pseudo}
+            onChange={(e) => setPseudo(e.target.value)}
             placeholder="Pseudo"
             className="w-full px-4 py-2 border rounded-full"
 
@@ -109,16 +134,16 @@ export default function RegisterUI() {
                         <Input
                             type="password"
                             name="password"
-                            value={form.password}
-                            onChange={handleChange}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="Password"
                             className={`w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 ${
-                                passwdValidator(form.password) || !form.password
+                                passwdValidator(password) || !password
                                     ? "focus:ring-blue-500"
                                     : "focus:ring-red-500"
                             }`}
                         />
-                        {form.password && !passwdValidator(form.password) && (
+                        {password && !passwdValidator(password) && (
                             <p className="text-red-500 text-xs mt-1">Le mot de passe doit contenir au moins 8 caractères et un chiffre</p>
                         )}
                     </div>
@@ -129,34 +154,29 @@ export default function RegisterUI() {
                         <Input
                             type="password"
                             name="confirmPassword"
-                            value={form.confirmPassword}
-                            onChange={handleChange}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Confirmation"
                             className={`w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 ${
-                                confirmPasswords() || !form.confirmPassword
+                                confirmPasswords() || !confirmPassword
                                     ? "focus:ring-blue-500"
                                     : "focus:ring-red-500"
                             }`}
 
                         />
-                        {form.confirmPassword && !confirmPasswords() && (
+                        {confirmPassword && !confirmPasswords() && (
                             <p className="text-red-500 text-xs mt-1">Les mots de passe ne correspondent pas</p>
                         )}
                     </div>
 
                     {/* Submit Button */}
-                    <Button 
-  type="submit" 
-  onClick={handleSubmit} 
-  variant="default" 
-  width="full" 
-  size="lg" 
-  font="bold" 
-  rounded="full" 
-  borderColor="none" // Ajout d'une bordure bleue
->
-  Sign In
-</Button>
+                    <button
+                    type="submit"
+                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+                    disabled={loading}
+                >
+                    {loading ? "Inscription en cours..." : "S'inscrire"}
+                </button>
                 </form>
             </div>
         </div>
