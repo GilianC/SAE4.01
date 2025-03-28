@@ -2,96 +2,55 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
-use App\Repository\PostRepository;
 use App\Entity\Post;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-final class PostController extends AbstractController
+class PostController extends AbstractController
 {
-    #[Route('/posts', name: 'posts.index', methods: ['GET'])]
-    public function index(Request $request, PostRepository $postRepository): Response
+    #[Route('/posts', name: 'post_list', methods: ['GET'])]
+    public function list(EntityManagerInterface $em): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
-        $limit = 50;
-        $offset = ($page - 1) * $limit;
-
-        $paginator = $postRepository->paginateAllOrderedByLatest($offset, $limit);
-        $totalPostsCount = $paginator->count();
-
-        $previousPage = $page > 1 ? $page - 1 : null;
-        $nextPage = ($offset + $limit) < $totalPostsCount ? $page + 1 : null;
-
-        return $this->json([
-            'posts' => iterator_to_array($paginator),
-            'previous_page' => $previousPage,
-            'next_page' => $nextPage,
-        ]);
+        $posts = $em->getRepository(Post::class)->findAll();
+    
+        $data = array_map(function (Post $post) {
+            $user = $post->getUser(); // On récupère l'utilisateur associé
+            return [
+                'id' => $post->getId(),
+                'content' => $post->getContent(),
+                'author' => $user ? $user->getPseudo() : 'Utilisateur inconnu',
+                'createdAt' => $post->getCreatedAt()->format('Y-m-d H:i:s'),
+            ];
+        }, $posts);
+    
+        return new JsonResponse($data);
     }
-    #[Route('/api/posts/{id}', name: 'api_posts_show', methods: ['GET', 'HEAD'])]
-    public function show(int $id, PostRepository $postRepository): JsonResponse
+    #[Route('/posts', name: 'posts.create', methods: ['POST'], format: 'json')]
+    public function create(EntityManagerInterface $em, \Symfony\Component\HttpFoundation\Request $request): JsonResponse
     {
-        $post = $postRepository->find($id);
-        if (!$post) {
-            return $this->json([
-                'message' => 'Post introuvable'
-            ], 404);
+        // Récupérer le token depuis l'en-tête Authorization
+        $apiToken = str_replace('Bearer ', '', $request->headers->get('Authorization'));
+        $user = $em->getRepository(\App\Entity\User::class)->findOneBy(['apiToken' => $apiToken]);
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Token API invalide ou expiré'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
-        return $this->json([
-            'post' => $post
-        ]);
-    }
-
-    #[Route('/api/posts/', name: 'api_posts_create', methods: ['POST'])]
-    public function create(Request $request, SerializerInterface $serializer): JsonResponse
-    {
-        try {
-            $post = $serializer->deserialize($request->getContent(), Post::class, 'json');
-        } catch (\Exception $e) {
-            return $this->json(['message' => 'Données JSON invalides'], 400);
+        $data = json_decode($request->getContent(), true);
+        if (!isset($data['content']) || empty($data['content'])) {
+            return new JsonResponse(['error' => 'Le contenu du post est obligatoire'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        if (!$post->getContent()) {
-            return $this->json(['message' => 'Le champ "content" est manquant'], 400);
-        }
-
+        $post = new Post();
+        $post->setContent($data['content']);
+        $post->setUser($user);
         $post->setCreatedAt(new \DateTime());
-        
-        $jsonContent = $serializer->serialize($post, 'json');
-        return JsonResponse::fromJsonString($jsonContent, 201);
+
+        $em->persist($post);
+        $em->flush();
+
+        return new JsonResponse(['message' => 'Post créé avec succès'], JsonResponse::HTTP_CREATED);
     }
-    // // PUT /api/posts/{id} : Remplacement complet d'une ressource
-    // #[Route('/api/posts/{id}', name: 'api_posts_update', methods: ['PUT'])]
-    // public function update(int $id, Request $request): JsonResponse
-    // {
-    //     // Logique pour remplacer complètement un post
-    //     return $this->json([
-    //         'message' => "Post {$id} mis à jour (remplacement complet)",
-    //     ]);
-    // }
-
-    // // PATCH /api/posts/{id} : Mise à jour partielle d'une ressource
-    // #[Route('/api/posts/{id}', name: 'api_posts_partial_update', methods: ['PATCH'])]
-    // public function partialUpdate(int $id, Request $request): JsonResponse
-    // {
-    //     // Logique pour mettre à jour partiellement un post
-    //     return $this->json([
-    //         'message' => "Post {$id} mis à jour (partiellement)",
-    //     ]);
-    // }
-
-    // // DELETE /api/posts/{id} : Suppression d'une ressource
-    // #[Route('/api/posts/{id}', name: 'api_posts_delete', methods: ['DELETE'])]
-    // public function delete(int $id): JsonResponse
-    // {
-    //     // Logique pour supprimer un post
-    //     return $this->json([
-    //         'message' => "Post {$id} supprimé",
-    //     ]);
-    // }
 }

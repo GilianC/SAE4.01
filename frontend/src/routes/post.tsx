@@ -1,10 +1,10 @@
 import React from "react";
-import AdminDashboard from "../component/Admin/AdminDashboard";
+import Poster from "../component/Post/Post.tsx";
 
 export default function Admin() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <AdminDashboard />
+      <Poster />
     </div>
   );
 }

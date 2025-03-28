@@ -27,6 +27,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $apiToken = null;
 
+    #[ORM\Column]
+    private ?bool $isValidated = false;
+
+    #[ORM\Column]
+    private array $roles = [];
+
+    public function __construct()
+{
+    $this->roles = ['ROLE_USER']; // Définition par défaut
+}
     public function getId(): ?int
     {
         return $this->id;
@@ -99,16 +109,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
-        // Assurez-vous d'avoir au moins ROLE_USER
-        $roles = ['ROLE_USER'];
-        return array_unique($roles);
+        $roles = $this->roles ?? []; // Si roles est null, on met []
+        $roles[] = 'ROLE_USER'; // Toujours ajouter ROLE_USER
+        return array_unique($roles); // Évite les doublons
     }
-
     /**
      * Supprimez les données sensibles, le cas échéant
      */
     public function eraseCredentials(): void
     {
         // Pas d'action particulière ici si vous ne stockez pas de données sensibles
+    }
+
+    public function isValidated(): ?bool
+    {
+        return (bool) $this->isValidated;
+
+    }
+
+    public function setIsValidated(bool $isValidated): static
+    {
+        $this->isValidated = $isValidated;
+
+        return $this;
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles ?: ['ROLE_USER']; 
+        return $this;
     }
 }

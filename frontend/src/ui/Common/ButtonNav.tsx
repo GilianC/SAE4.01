@@ -15,15 +15,14 @@ export default function Button({
   variant,
   width,
   size,
-  font,
   rounded,
-  borderColor, // Ajout de la prop
+
 }: ButtonProps) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={buttonStyle({ variant, width, size, font, rounded, borderColor })} // Application des styles
+      className={buttonStyle({ variant, width, size, rounded })} // Application des styles
     >
       {children}
     </button>

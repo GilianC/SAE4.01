@@ -14,47 +14,42 @@ export default function RegisterUI() {
     const [pseudo, setPseudo] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [confirmPassword, setConfirmPassword] = useState<string>(""); // Ajout de l'état
-    const [message, setMessage] = useState<string | null>(null);
+    // const [message, setMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    // const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setMessage(null);
-
-        // ✅ Vérifier que les mots de passe correspondent
-        if (password !== confirmPassword) {
-            setMessage("Les mots de passe ne correspondent pas.");
-            return;
-        }
-
-        setLoading(true);
-
-        const requestData = { email, pseudo, password };
-        console.log("Envoi de la requête avec :", requestData);
-    
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        const requestData = { email, pseudo, password};
         try {
-            const response = await fetch("http://localhost:8000/register", {
+            const response = await fetch("http://localhost:8080/register", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(requestData)
-            });
-    
-            const data = await response.json();
-            console.log("Réponse reçue :", data);
-    
-            if (response.ok) {
-                setMessage(`Inscription réussie ! Token : ${data.api_token}`);
-            } else {
-                setMessage(`Erreur : ${data.message}`);
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData),
+              });
+              if (!response.ok) {
+                if (response.status === 409) {
+                  throw new Error("Cet email est déjà utilisé.");
+                }
+                throw new Error(`Erreur HTTP : ${response.status}`);
+              }
+
+              const data = await response.json();
+              if (data.message === 'Email de validation envoyé. Veuillez vérifier votre boîte de réception.') {
+                setSuccessMessage(data.message);
+                navigate("/login");
+              }
+              console.log(data);
+          
+            } catch (error) {
+
+              console.error("Erreur de requête :", error);
+             
+              setErrorMessage(error.message); 
             }
-        } catch (error) {
-            console.error("Erreur de requête :", error);
-            setMessage("Erreur lors de la connexion au serveur.");
-        }
-    };
+            
+          };
 
     const passwdValidator = (password: string): boolean => {
         const isValidLength = password.length >= 8;
@@ -74,10 +69,7 @@ export default function RegisterUI() {
         return regex.test(email);
     };
 
-    const sendConfirmationEmail = async (email: string): Promise<void> => {
-        // Implémentez ici l'appel à votre API ou la logique d'envoi de mail
-        console.log(`Email de confirmation envoyé à ${email}`);
-    };
+
     const [errorMessage, setErrorMessage] = useState<string>("");
 
     const checkAllFields = (): boolean => {
@@ -170,14 +162,19 @@ export default function RegisterUI() {
                     </div>
 
                     {/* Submit Button */}
-                    <button
+                    <Button
                     type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
-                    disabled={loading}
-                >
+                    variant="default"
+                    width= "auto"
+                    size= "md"
+                    font= "normal"
+                    rounded= "full"
+                    borderColor="none">
                     {loading ? "Inscription en cours..." : "S'inscrire"}
-                </button>
+                </Button>
                 </form>
+                {successMessage && <p>{successMessage}</p>}
+                {errorMessage && <p>{errorMessage}</p>}
             </div>
         </div>
     );

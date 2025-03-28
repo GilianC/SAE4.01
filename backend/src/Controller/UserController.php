@@ -12,86 +12,166 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\EmailSender;
 
 final class UserController extends AbstractController
 {
-    #[Route('/login', name: 'users.index', methods: ['GET'])]
-    public function index(): JsonResponse
-    {
-        return $this->json($this->getUser());
+    
+    private $emailSender;
+
+    public function __construct(EmailSender $emailSender) {
+        $this->emailSender = $emailSender;
     }
 
-    #[Route('/api/users/{id}', name: 'api_users_show', methods: ['GET', 'HEAD'])]
-    public function show(int $id, UserRepository $userRepository): JsonResponse
+    #[Route('/login', name: 'api_users_login', methods: ['POST'])]
+    public function login(Request $request, UserRepository $userRepository, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordEncoder): JsonResponse
     {
-        $user = $userRepository->find($id);
-        if (!$user) {
-            return $this->json([
-                'message' => 'User not found',
-                'token' => bin2hex(random_bytes(16)),
-            ], 404);
+       
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['email']) || !isset($data['password'])) {
+            return $this->json(['message' => 'Email ou mot de passe manquant'], Response::HTTP_BAD_REQUEST);
         }
 
-        $data = [
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'pseudo' => $user->getPseudo(),
-        ];
+        $email = $data['email'];
+        $password = $data['password'];
 
-        $token = bin2hex(random_bytes(16));
+        // Chercher l'utilisateur dans la base de données
+        $user = $userRepository->findOneBy(['email' => $email]);
 
+        // Vérifier si l'utilisateur existe
+        if (!$user) {
+            return $this->json(['message' => 'Email ou mot de passe incorrect'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Vérifier le mot de passe
+        if (!$passwordEncoder->isPasswordValid($user, $password)) {
+            return $this->json(['message' => 'Email ou mot de passe incorrect'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Vérifier si l'utilisateur a validé son email
+        if (!$user->isValidated()) {
+            return $this->json(['message' => 'Votre email n\'a pas été validé. Veuillez vérifier votre boîte de réception.'], Response::HTTP_FORBIDDEN);
+        }
+
+        // Générer un token API s'il n'existe pas encore
+        if (!$user->getApiToken()) {
+            // Générer un token sécurisé
+            $token = bin2hex(random_bytes(32)); // Générer un token sécurisé
+            $user->setApiToken($token);
+
+            // Sauvegarder l'utilisateur avec le token en base de données
+            $entityManager->persist($user);
+            $entityManager->flush();
+        } else {
+            // Si un token existe déjà, on l'utilise
+            $token = $user->getApiToken();
+        }
+
+        // Retourner la réponse avec le message de succès et le token
         return $this->json([
-            'user' => $data,
+            'message' => 'Authentification réussie',
             'token' => $token,
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+            ]
         ]);
     }
+    #[Route('/users', name: 'get_users', methods: ['GET'])]
+    public function getUsers(UserRepository $userRepository): JsonResponse
+    {
+        // Récupérer tous les utilisateurs
+        $users = $userRepository->findAll();
+        
+        // Exclure les rôles des utilisateurs
+        $usersData = array_map(function ($user) {
+            return [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                // Ajoutez d'autres informations si nécessaire
+            ];
+        }, $users);
 
+        // Renvoie les utilisateurs sans les rôles
+        return $this->json($usersData);
+    }
+    #[Route('/api/users/{id}', name: 'api_users_show', methods: ['GET', 'HEAD'])]
+    public function getUserById(int $id, UserRepository $userRepository): JsonResponse
+    {
+        $user = $userRepository->find($id);
+
+        if (!$user) {
+            return new JsonResponse(['message' => 'Utilisateur non trouvé'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        return new JsonResponse($user);
+    }
     #[Route('/register', name: 'api_users_create', methods: ['POST'])]
-    public function register(
-        Request $request,
-        SerializerInterface $serializer,
-        EntityManagerInterface $entityManager,
-        UserRepository $userRepository,
-        UserPasswordHasherInterface $passwordHasher
-    ): JsonResponse {
-        try {
-            // Désérialisation des données envoyées en JSON
-            $user = $serializer->deserialize($request->getContent(), User::class, 'json');
-        } catch (\Exception $e) {
-            return $this->json(['message' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
+    public function register(Request $request, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): JsonResponse
+    {
+
+            // Récupérer les données de la requête
+            $data = json_decode($request->getContent(), true);
+    
+            // Vérifier que les données nécessaires sont présentes
+            if (!isset($data['email']) || !isset($data['password']) || !isset($data['pseudo'])) {
+                return $this->json(['message' => 'Email, mot de passe ou pseudo manquant'], Response::HTTP_BAD_REQUEST);
+            }
+    
+            $email = $data['email'];
+            $password = $data['password'];
+            $pseudo = $data['pseudo'];  // Ajouter pseudo
+    
+            // Vérifier si l'email existe déjà
+            $existingUser = $userRepository->findOneBy(['email' => $email]);
+            if ($existingUser) {
+                return $this->json(['message' => 'Email déjà utilisé'], Response::HTTP_CONFLICT);
+            }
+            $user = new User();
+            $user->setEmail($email);
+            $user->setPseudo($pseudo);  
+            $user->setPassword($passwordHasher->hashPassword($user, $password));
+            $user->setIsValidated(false);  
+            $user->setApiToken(bin2hex(random_bytes(32))); 
+
+            if (empty($user->getRoles())) {
+                $user->setRoles(['ROLE_USER']);
+            }
+
+            $entityManager->persist($user);
+            $entityManager->flush();
+            $this->emailSender->sendValidationEmail($user->getEmail(), $user->getApiToken());
+            return $this->json(['message' => 'Utilisateur créé avec succès'], Response::HTTP_CREATED);
+    
+
+    }
+
+
+    #[Route('/validate', name: 'api_users_validate', methods: ['GET'])]
+    public function validateUser(Request $request, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $token = $request->query->get('token');  // Récupère le token depuis l'URL
+    
+        if (!$token) {
+            return $this->json(['message' => 'Token manquant'], Response::HTTP_BAD_REQUEST);
         }
     
-        // Vérification des champs obligatoires
-        if (!$user->getEmail() || !$user->getPseudo() || !$user->getPassword()) {
-            return $this->json(['message' => 'Missing required user fields'], Response::HTTP_BAD_REQUEST);
+        // Recherche l'utilisateur par le token
+        $user = $userRepository->findOneBy(['apiToken' => $token]);
+    
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], Response::HTTP_NOT_FOUND);
         }
     
-        // Vérifier si l'utilisateur existe déjà (email unique)
-        if ($userRepository->findOneBy(['email' => $user->getEmail()])) {
-            return $this->json(['message' => 'Email already in use'], Response::HTTP_CONFLICT);
-        }
+        // Marquer l'utilisateur comme validé
+        $user->setIsValidated(true);
     
-        // Hachage du mot de passe
-        $hashedPassword = $passwordHasher->hashPassword($user, $user->getPassword());
-        $user->setPassword($hashedPassword);
-    
-        // Génération du token API (si l'entité User possède bien un setter pour apiToken)
-        if (method_exists($user, 'setApiToken')) {
-            $apiToken = bin2hex(random_bytes(32));
-            $user->setApiToken($apiToken);
-        } else {
-            return $this->json(['message' => 'API Token method missing in User entity'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    
-        // Sauvegarde en base de données
+        // Persister les modifications et les sauvegarder dans la base de données
         $entityManager->persist($user);
-        $entityManager->flush();
+        $entityManager->flush();  // Applique les changements dans la base de données
     
-        return $this->json([
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'pseudo' => $user->getPseudo(),
-            'api_token' => $apiToken
-        ], Response::HTTP_CREATED);
+        return $this->json(['message' => 'Email validé avec succès'], Response::HTTP_OK);
     }
 }

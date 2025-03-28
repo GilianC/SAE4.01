@@ -1,10 +1,10 @@
 import React from "react";
-import AdminDashboard from "../component/Admin/AdminDashboard";
+import AdminUserForm from "../component/Admin/AdminUserForm";
 
-export default function Admin() {
+export default function AdminEdit() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <AdminDashboard />
+      <AdminUserForm />
     </div>
   );
 }

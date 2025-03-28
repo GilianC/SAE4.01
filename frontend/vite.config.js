@@ -14,5 +14,5 @@ export default defineConfig({
    host: true,
    origin: "http://localhost:8090",
    allowedHosts: ["sae-frontend"]
-  },
+  }
 });

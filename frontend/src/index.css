@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,8 +6,8 @@
 @layer base {
   :root {
     /* Primitives Tokens  */
-    --clr-white: 0 0% 100%;
-    --clr-dark-grey: 0 0% 10%;
+    --clr-white: rgb(255, 255, 255);
+    --clr-dark-grey: rgb(26, 26, 26);
     /* Sementics Tokens */
     --foreground: var(--clr-dark-grey);
     --background: var(--clr-white);

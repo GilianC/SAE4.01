@@ -1,63 +1,63 @@
-import React , {useState} from "react";
-import  Button  from "../../ui/Common/Button";
-import Input from '../../ui/Common/Input';
-import { useNavigate } from 'react-router-dom';
-import { authenticateUser } from '../../lib/data/User';
-export default function Login() {
-    const [form, setForm] = useState({
-      email: "",
-      password: "",
-    });
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
-  
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm({ ...form, [e.target.name]: e.target.value });
-    };
-  
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-  
-      if (!authenticateUser(form.email, form.password)) {
-        setError("Email ou mot de passe incorrect.");
-        return;
+
+
+import React, { useState } from "react";
+import { postRequest } from "../../lib/utils"; // Import de la fonction postRequest
+
+const Login = () => {
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const data = await postRequest("/login", form);
+      if (data && data.token) {
+        localStorage.setItem("token", data.token); // Sauvegarder le token dans localStorage
+        // Vérifier si l'utilisateur est un admin ou non, et rediriger en fonction
+        if (data.user && data.user.roles.includes('ROLE_ADMIN')) {
+
+          window.location.href = "/admin"; 
+        } else {
+
+          window.location.href = "/feed"; // Page d'accueil des utilisateurs
+        }
+      } else {
+        alert("Connexion échouée !");
       }
-  
-      // Rediriger après connexion réussie
-      navigate("/home");
-    };
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-        <div className="w-full max-w-xs">
-          <h2 className="text-xl font-bold text-center mb-6">Log In</h2>
-  
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-  
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Mail"
-              className="w-full px-4 py-2 border rounded-full"
+    } catch (error) {
+      console.error("Erreur lors de la connexion:", error);
+    }
+  };
 
-            />
-            <Input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="w-full px-4 py-2 border rounded-full"
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          placeholder="Email"
+        />
+        <input
+          type="password"
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          placeholder="Mot de passe"
+        />
+        <button type="submit">Se connecter</button>
+      </form>
+    </div>
+  );
+};
 
-            />
-                    <Button children="Login" type="submit" onClick={handleSubmit}>
-                        
-                    </Button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-  
+export default Login;
