@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getUserById, updateUser } from "../../lib/data/User"; // Importer la fonction getUserById et updateUser
+import { getUserById, updateUser } from "../../lib/data/User"; 
 
 const AdminUserEdit = () => {
-  const { id } = useParams<{ id: string }>(); // Récupérer l'ID de l'utilisateur depuis l'URL
+  const { id } = useParams<{ id: string }>(); 
   const [user, setUser] = useState<any | null>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-    const navigate = useNavigate(); // Pour la navigation
-  const [error, setError] = useState<string | null>(null); // Pour gérer les erreurs
+    const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Si l'id est disponible, on effectue la requête pour obtenir les informations de l'utilisateur
+  
     if (id) {
       const fetchUser = async () => {
         try {
-          const userData = await getUserById(id); // Remplacer par ta fonction pour récupérer l'utilisateur
+          const userData = await getUserById(parseInt(id)); 
           setUser(userData);
         } catch (error: any) {
           console.error("Erreur lors de la récupération de l'utilisateur:", error);
@@ -40,7 +40,7 @@ const AdminUserEdit = () => {
     try {
       await updateUser(parseInt(id),  email, name ); // Mettre à jour l'utilisateur
       alert("Utilisateur mis à jour !");
-      navigate("/admin"); // Rediriger vers le tableau de bord admin
+      navigate("/auth/admin"); // Rediriger vers le tableau de bord admin
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
     }

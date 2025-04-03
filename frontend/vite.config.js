@@ -1,18 +1,21 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwind from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: "/",
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwind(),
+  ],
   preview: {
-   port: 5173,
-   strictPort: true,
+    port: 5173,
+    strictPort: true,
   },
   server: {
-   port: 5173,
-   strictPort: true,
-   host: true,
-   origin: "http://localhost:8090",
-   allowedHosts: ["sae-frontend"]
-  }
+    port: 5173,
+    strictPort: true,
+    host: true,
+    origin: "http://localhost:8090",
+    allowedHosts: ["sae-frontend"]
+  },
 });

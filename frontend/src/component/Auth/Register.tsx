@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
-import { addUser } from '../../lib/data/User';
+
 import { useNavigate } from "react-router-dom";
-import Button from "../../ui/Common/Button";
-import Input from '../../ui/Common/Input';
+import {Button} from "../../ui/Common/Button";
+import {Input} from '../../ui/Common/Input';
+import Logo from "../../ui/Logo";
 import { User } from '../../lib/data/User';
 
 
@@ -13,11 +14,11 @@ export default function RegisterUI() {
     const [email, setEmail] = useState<string>("");
     const [pseudo, setPseudo] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const [confirmPassword, setConfirmPassword] = useState<string>(""); // Ajout de l'état
-    // const [message, setMessage] = useState<string | null>(null);
+    const [confirmPassword, setConfirmPassword] = useState<string>(""); 
+
     const [loading, setLoading] = useState<boolean>(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    // const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -43,10 +44,12 @@ export default function RegisterUI() {
               console.log(data);
           
             } catch (error) {
-
               console.error("Erreur de requête :", error);
-             
-              setErrorMessage(error.message); 
+              if (error instanceof Error) {
+                setErrorMessage(error.message);
+              } else {
+                setErrorMessage("An unexpected error occurred");
+              }
             }
             
           };
@@ -79,33 +82,29 @@ export default function RegisterUI() {
   
     
     return (
-        <div
-            className="flex flex-col items-center justify-center min-h-screen bg-white bg-opacity-70 backdrop-blur-sm"
-        >
-            {/* Logo Twitter */}
-
-            {/* Formulaire */}
-            <div className="w-full max-w-2xl bg-white h-auto pt-32 pb-32 px-32 rounded shadow-lg">
-
-                <h2 className="text-xl font-bold text-center mb-6">
-                    Create an Account
-                </h2>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    {/* Email */}
-                    <div>
-                        <label className="block font-semibold mb-1">Address mail</label>
+        <div className="flex flex-col items-center justify-center min-h-screen flex items-center justify-center bg-gray-900">
+        {/* Logo Twitter */}
+        <div className="">
+            <Logo />
+        </div>
+  
+        {/* Formulaire d'inscription */}
+        <div className="w-full max-w-2xl bg-gray-700 p-8 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-center mb-6 text-gray-200">
+            Créer un compte
+          </h2>
+  
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Email */}
+            <div>
+              <label className="block font-semibold mb-1 text-gray-700">Adresse mail</label>
                         <Input
                             type="email"
                             name="email"
                             value={email}
                             onChange= {(e) => setEmail(e.target.value)}
                             placeholder="Mail"
-                            className={`w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 ${
-                                validateEmail(email) || !email
-                                    ? "focus:ring-blue-500"
-                                    : "focus:ring-red-500"
-                            }`}
+                            error={!validateEmail(email) && email !== ""}
                         />
                         {email && !validateEmail(email) && (
                             <p className="text-red-500 text-xs mt-1">Adresse mail invalide</p>
@@ -117,7 +116,7 @@ export default function RegisterUI() {
             value={pseudo}
             onChange={(e) => setPseudo(e.target.value)}
             placeholder="Pseudo"
-            className="w-full px-4 py-2 border rounded-full"
+         
 
           />
                     {/* Password */}
@@ -129,11 +128,8 @@ export default function RegisterUI() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Password"
-                            className={`w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 ${
-                                passwdValidator(password) || !password
-                                    ? "focus:ring-blue-500"
-                                    : "focus:ring-red-500"
-                            }`}
+                            
+                            error={password !== "" && !passwdValidator(password)}
                         />
                         {password && !passwdValidator(password) && (
                             <p className="text-red-500 text-xs mt-1">Le mot de passe doit contenir au moins 8 caractères et un chiffre</p>
@@ -149,11 +145,7 @@ export default function RegisterUI() {
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Confirmation"
-                            className={`w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 ${
-                                confirmPasswords() || !confirmPassword
-                                    ? "focus:ring-blue-500"
-                                    : "focus:ring-red-500"
-                            }`}
+                            error={confirmPassword !== "" && !confirmPasswords()}
 
                         />
                         {confirmPassword && !confirmPasswords() && (
@@ -164,12 +156,11 @@ export default function RegisterUI() {
                     {/* Submit Button */}
                     <Button
                     type="submit"
-                    variant="default"
+                    variant="primary"
                     width= "auto"
                     size= "md"
                     font= "normal"
-                    rounded= "full"
-                    borderColor="none">
+                    rounded= "full">
                     {loading ? "Inscription en cours..." : "S'inscrire"}
                 </Button>
                 </form>

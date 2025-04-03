@@ -1,4 +1,7 @@
-
+import { clsx } from "clsx";
+export function cn(...inputs) {
+  return clsx(inputs);
+}
 // fake a cache so we don't slow down stuff we've already seen
 let fakeCache = {};
 
@@ -16,23 +19,22 @@ export async function fakeNetwork(key) {
     setTimeout(res, Math.random() * 3000);
   });
 }
-export const getRequest = async (url) => {
-  const response = await fetch(`http://localhost:8080${url}`, {
-    method: 'GET',
+export function getRequest(url) {
+  const token = localStorage.getItem("token"); // Adapter si besoin
+  return fetch(`http://localhost:8080${url}`, {
     headers: {
-      'Content-Type': 'application/json',
-      // Tu peux ajouter ici un en-tête d'autorisation si nécessaire, par exemple :
-      // 'Authorization': `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` })
     },
+  })
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Erreur HTTP " + response.status);
+    }
+    return response.json();
   });
+}
 
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data;
-};
 const API_URL = "http://localhost:8080";
 export const postRequest = async (url, data) => {
   const token = localStorage.getItem("token"); // Si tu as un token stocké
@@ -61,3 +63,18 @@ export const postRequest = async (url, data) => {
     throw error;
   }
 };
+export const deleteRequest = async (url) => {
+  const response = await fetch(`http://localhost:8080${url}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Suppression échouée");
+  }
+
+  return response.json();
+};
+

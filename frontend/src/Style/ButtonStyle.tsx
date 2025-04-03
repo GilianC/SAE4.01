@@ -1,51 +1,44 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 
 const buttonStyle = cva(
-  "transition-all duration-300", // Classes de base
+  "w-full py-2 px-4 rounded-lg font-semibold transition-all focus:outline-none focus:ring-2",
   {
     variants: {
       variant: {
-        default: "bg-blue-500 text-white hover:bg-blue-600",
-        white: "bg-white text-blue-500 hover:bg-gray-200",
-        dark: "bg-black text-white hover:bg-gray-800",
+        primary: "bg-blue-800 text-white hover:bg-blue-700 focus:ring-blue-500",
+        danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
+        secondary: "bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500",
+        white: "bg-white text-gray-800 hover:bg-gray-100 focus:ring-gray-300",
       },
       width: {
-        full: "w-full",
+        small: "w-1/2",
+        medium: "w-1/3",
         auto: "w-auto",
+        full: "w-full",
       },
       size: {
-        sm: "px-3 py-1 text-sm",
-        md: "px-4 py-2 text-base",
-        lg: "px-6 py-3 text-lg",
+        md: "py-2 px-4 text-md",
+        sm: "py-1 px-2 text-sm",
+        lg: "py-3 px-6 text-lg",
       },
       font: {
         normal: "font-normal",
-        bold: "font-bold",
+
       },
       rounded: {
-        none: "rounded-none",
-        sm: "rounded-sm",
-        md: "rounded-md",
-        lg: "rounded-lg",
         full: "rounded-full",
-      },
-      borderColor: {
-        none: "border-none",
-        default: "border border-blue-500",
-        white: "border border-white",
-        dark: "border border-black",
+        lg: "rounded-lg",
       },
     },
     defaultVariants: {
-      variant: "default",
-      width: "auto",
+      variant: "primary",
+      width: "full",
       size: "md",
       font: "normal",
-      rounded: "md",
-      borderColor: "none",
+      rounded: "lg",
     },
   }
 );
 
-export type ButtonStyleProps = VariantProps<typeof buttonStyle>;
+
 export default buttonStyle;

@@ -99,3 +99,22 @@ export const getUserById = async (id: number) => {
     throw new Error("Erreur lors de la récupération de l'utilisateur");
   }
 };
+export const toggleUserBlock = async (id: number) => {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(`http://localhost:8080/user/${id}/toggle-block`, {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { "Authorization": `Bearer ${token}` })
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Erreur API:", errorText);
+    throw new Error("Erreur lors du blocage/déblocage de l'utilisateur.");
+  }
+
+  return await response.json();
+}

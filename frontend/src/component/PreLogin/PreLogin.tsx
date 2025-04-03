@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Button from "../../ui/Common/Button";
+import {Button} from "../../ui/Common/Button";
 export default function PreLogin() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -19,12 +19,11 @@ export default function PreLogin() {
           <Link to="/login">
         <Button 
           type="submit" 
-          variant="default" 
+          variant="primary" 
           width="full" 
           size="lg" 
-          font="bold" 
-          rounded="full"
-          borderColor= "none" // Ajout de la bordure arrondie
+          font="normal" 
+          rounded="full" 
         >
           Login
         </Button>
@@ -37,9 +36,8 @@ export default function PreLogin() {
           variant="white" 
           width="full" 
           size="lg" 
-          font="bold" 
-          rounded="full"
-          borderColor="dark" // Ajout de la bordure arrondie
+          font="normal" 
+          rounded="full" // Ajout de la bordure arrondie
         >
           Sign In
         </Button>

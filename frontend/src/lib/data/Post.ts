@@ -2,7 +2,11 @@ export interface Post {
   id: number;
   content: string;
   author: string; // Le pseudo de l'utilisateur qui a posté
+  authorId: number; // ID de l'utilisateur
+  avatar: string; // URL de l'avatar de l'utilisateur
   createdAt: string;
+  likes: number; // Assurez-vous que 'likes' est toujours un nombre
+  liked?: boolean; // Indique si l'utilisateur a aimé ce post
 }
 
 /**
@@ -28,10 +32,17 @@ export async function getPosts(): Promise<Post[]> {
   }
 
   const data = await response.json();
+  
+  // Assurer que le nombre de likes est bien un nombre
   if (!Array.isArray(data)) {
     throw new Error("Le format des données reçues n'est pas un tableau");
   }
-  return data;
+
+  // Assurer que chaque post a bien un champ likes sous forme de nombre
+  return data.map((post: any) => ({
+    ...post,
+    likes: Number(post.likes) || 0, // Cast explicite en nombre, sinon 0
+  }));
 }
 
 /**

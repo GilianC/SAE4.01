@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\Subscription;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -9,10 +10,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
+
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Service\EmailSender;
+
 
 final class UserController extends AbstractController
 {
@@ -112,19 +114,14 @@ final class UserController extends AbstractController
     public function register(Request $request, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): JsonResponse
     {
 
-            // Récupérer les données de la requête
             $data = json_decode($request->getContent(), true);
-    
-            // Vérifier que les données nécessaires sont présentes
             if (!isset($data['email']) || !isset($data['password']) || !isset($data['pseudo'])) {
                 return $this->json(['message' => 'Email, mot de passe ou pseudo manquant'], Response::HTTP_BAD_REQUEST);
             }
     
             $email = $data['email'];
             $password = $data['password'];
-            $pseudo = $data['pseudo'];  // Ajouter pseudo
-    
-            // Vérifier si l'email existe déjà
+            $pseudo = $data['pseudo'];  
             $existingUser = $userRepository->findOneBy(['email' => $email]);
             if ($existingUser) {
                 return $this->json(['message' => 'Email déjà utilisé'], Response::HTTP_CONFLICT);
@@ -147,8 +144,48 @@ final class UserController extends AbstractController
     
 
     }
+    #[Route('/profile/{id}', name: 'api_users_profile', methods: ['GET'])]
+    public function profile(int $id, UserRepository $userRepository): JsonResponse
+    {
+        $user = $userRepository->find($id);
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], Response::HTTP_NOT_FOUND);
+        }
+        
+        return $this->json([
+            'id'       => $user->getId(),
+            'pseudo'   => $user->getPseudo(),
+            'bio'      => $user->getBio(),
+            'avatar'   => $user->getAvatar(),
+            'banner'   => $user->getBanner(),
+            'location' => $user->getLocation(),
+            'website'  => $user->getWebsite(),
+        ]);
+    }
+    // #[Route('/uploadavatar', name: 'upload_avatar', methods: ['POST'])]
+    // public function uploadAvatar(Request $request): JsonResponse
+    // {
 
+    //     $file = $request->files->get('avatar');
 
+    //     if (!$file) {
+    //         return $this->json(['error' => 'Fichier manquant'], JsonResponse::HTTP_BAD_REQUEST);
+    //     }
+    //     if (!in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif'])) {
+    //         return $this->json(['error' => 'Le fichier doit être une image valide'], JsonResponse::HTTP_BAD_REQUEST);
+    //     }
+
+    //     $uploadDirectory = '/path/to/your/upload/directory';
+
+    //     $newFilename = uniqid() . '.' . $file->guessExtension();
+
+    //     try {
+    //         $file->move($uploadDirectory, $newFilename);
+    //     } catch (FileException $e) {
+    //         return $this->json(['error' => 'Erreur lors de l\'upload de l\'image'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+    //     }
+    //     return $this->json(['message' => 'Avatar mis à jour avec succès', 'filename' => $newFilename]);
+    // }
     #[Route('/validate', name: 'api_users_validate', methods: ['GET'])]
     public function validateUser(Request $request, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -174,4 +211,44 @@ final class UserController extends AbstractController
     
         return $this->json(['message' => 'Email validé avec succès'], Response::HTTP_OK);
     }
+#[Route('/follow/{id}', methods: ['POST'])]
+public function followUser(int $id, EntityManagerInterface $em) {
+    $currentUser = $this->getUser();
+    $userToFollow = $em->getRepository(User::class)->find($id);
+
+    if (!$userToFollow || $currentUser === $userToFollow) {
+        return $this->json(["message" => "Utilisateur invalide"], 400);
+    }
+
+    $subscriptionRepo = $em->getRepository(Subscription::class);
+    $existingSubscription = $subscriptionRepo->findOneBy([
+        'follower' => $currentUser,
+        'following' => $userToFollow
+    ]);
+
+    if ($existingSubscription) {
+        // Si déjà suivi, on supprime
+        $em->remove($existingSubscription);
+        $message = "Désabonné";
+    } else {
+        // Sinon, on ajoute
+        $subscription = new Subscription();
+        $subscription->setFollower($currentUser);
+        $subscription->setFollowing($userToFollow);
+        $em->persist($subscription);
+        $message = "Suivi";
+    }
+
+    $em->flush();
+    return $this->json(["message" => $message]);
+}
+#[Route('/followed', methods: ['GET'])]
+public function getFollowedUsers( EntityManagerInterface $em) {
+    $currentUser = $this->getUser();
+    $subscriptions = $em->getRepository(Subscription::class)->findBy(['follower' => $currentUser]);
+
+    $followedUsers = array_map(fn($sub) => $sub->getFollowing()->getId(), $subscriptions);
+
+    return $this->json($followedUsers);
+}
 }

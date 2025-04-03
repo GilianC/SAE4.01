@@ -1,12 +1,15 @@
 <?php
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Dom\Entity;
 use Symfony\Component\HttpFoundation\Request;
 
 class AdminController extends AbstractController
@@ -67,4 +70,22 @@ class AdminController extends AbstractController
 
         return $this->json(['message' => 'Utilisateur mis à jour avec succès']);
     }
+    #[Route('/user/{id}/toggle-block', name: 'admin_toggle_block', methods: ['POST'])]
+public function toggleBlock(User $user, EntityManagerInterface $entityManager): JsonResponse
+{
+    // Vérifier si l'utilisateur connecté est un administrateur
+    $admin = $this->getUser();
+    if (!$admin || !in_array('ROLE_ADMIN', $admin->getRoles())) {
+        return new JsonResponse(['error' => 'Accès non autorisé'], JsonResponse::HTTP_FORBIDDEN);
+    }
+
+    // Inverser l'état du blocage
+    $user->setIsBlocked(!$user->isBlocked());
+    $entityManager->flush();
+
+    return new JsonResponse([
+        'message' => $user->isBlocked() ? 'Utilisateur bloqué' : 'Utilisateur débloqué',
+        'isBlocked' => $user->isBlocked()
+    ]);
+}
 }

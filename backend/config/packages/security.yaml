@@ -27,7 +27,7 @@ security:
         main:
             lazy: true
             provider: users_in_memory
-
+            user_checker: App\Security\UserChecker
             # access_token:
             #     token_handler: App\Security\AccessTokenHandler
 
@@ -42,7 +42,8 @@ security:
     access_control:
        - { path: /login, roles: PUBLIC_ACCESS }
        - { path: /register, roles: PUBLIC_ACCESS }
-    #    - { path: /posts, roles: ROLE_USER }
+       - { path: /posts, roles: PUBLIC_ACCESS }
+       - { path: /post/followed, roles: PUBLIC_ACCESS }
 when@test:
     security:
         password_hashers:

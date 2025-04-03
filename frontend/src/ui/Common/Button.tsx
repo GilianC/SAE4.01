@@ -1,31 +1,37 @@
 import React from "react";
-import buttonStyle, { ButtonStyleProps } from "../../Style/ButtonStyle";
+import  buttonStyle  from "../../Style/ButtonStyle";
+import { cn } from "../../lib/utils";
 
-
-interface ButtonProps extends ButtonStyleProps {
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+interface ButtonProps {
+  type: "button" | "submit";
   children: React.ReactNode;
-  type?: "button" | "submit";
+  variant?: "primary" | "danger" | "secondary" | "white";
+  width?: "auto" | "full" | "small" | "medium";
+  size?: "md" | "sm" | "lg";
+  font?: "normal";
+  rounded?: "full" | "lg";
+  onClick?: () => void;
 }
 
-export default function Button({
-  onClick,
+export const Button = ({
+  type,
   children,
-  type = "button",
-  variant,
-  width,
-  size,
-  font,
-  rounded,
-  borderColor, // Ajout de la prop
-}: ButtonProps) {
+  variant = "primary",
+  width = "full",
+  size = "md",
+  font = "normal",
+  rounded = "lg",
+  onClick,
+}: ButtonProps) => {
   return (
     <button
       type={type}
+      className={cn(buttonStyle({ variant, width, size, font, rounded }))}
       onClick={onClick}
-      className={buttonStyle({ variant, width, size, font, rounded, borderColor })} // Application des styles
     >
       {children}
     </button>
   );
-}
+};
+
+

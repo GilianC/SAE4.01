@@ -1,15 +1,17 @@
 import React from "react";
+import { inputVariants } from "../../Style/InputButton";
+
+import { cn } from "../../lib/utils";
 
 interface InputProps {
   type: string;
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
-  className?: string;
+  placeholder?: string;
+  error?: boolean;
 }
-
-export default function Input({ type, name, value, onChange, placeholder, className }: InputProps) {
+export const Input = ({ type, name, value, onChange, placeholder, error }: InputProps) => {
   return (
     <input
       type={type}
@@ -17,8 +19,7 @@ export default function Input({ type, name, value, onChange, placeholder, classN
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={className}
-      required
+      className={cn(inputVariants({ variant: error ? "error" : "primary" }))}
     />
   );
-}
+};
