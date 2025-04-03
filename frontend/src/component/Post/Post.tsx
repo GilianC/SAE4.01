@@ -18,7 +18,7 @@ export default function PostForm() {
       const result = await createPost(content);
       setSuccessMessage("Post créé avec succès !");
       // Vous pouvez rediriger ou rafraîchir la page si nécessaire
-      navigate("auth/home"); 
+      navigate("/auth/home"); 
     } catch (err: any) {
       setError(err.message);
     }

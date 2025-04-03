@@ -132,7 +132,8 @@ final class UserController extends AbstractController
             $user->setPassword($passwordHasher->hashPassword($user, $password));
             $user->setIsValidated(false);  
             $user->setApiToken(bin2hex(random_bytes(32))); 
-
+            $user->setApiToken(bin2hex(random_bytes(32)));
+            $user->setIsBlocked(false);
             if (empty($user->getRoles())) {
                 $user->setRoles(['ROLE_USER']);
             }

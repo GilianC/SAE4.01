@@ -62,24 +62,9 @@ export default function NonFollowFeed() {
         </label>
       </div>
 
-      {/* Affichage des posts */}
-      {loading ? (
-        <p className="text-center text-gray-500 mt-4">Chargement...</p>
-      ) : error ? (
-        <p className="text-center text-red-500 mt-4">{error}</p>
-      ) : posts.length === 0 ? (
-        <p className="text-center text-gray-500 mt-4">Aucun post pour l'instant.</p>
-      ) : (
-        posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onDelete={handleDelete}
-            onLike={handleLike}
-          />
-        ))
-      )}
-      {/* Floating Button for New Post */}
+      {posts.map(post => (
+        <PostCard  post={post} onLike={handleLike} onDelete={handleDelete} />
+      ))}
       <Link
         to="/auth/post"
         className="fixed bottom-16 right-4 bg-[#0D1B2A] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#1B263B] transition-all"

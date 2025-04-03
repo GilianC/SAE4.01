@@ -6,7 +6,7 @@ import {Button} from "../../ui/Common/Button";
 import {Input} from '../../ui/Common/Input';
 import Logo from "../../ui/Logo";
 import { User } from '../../lib/data/User';
-
+import { postRequest } from '../../lib/utils';
 
 
 export default function RegisterUI() {
@@ -24,19 +24,8 @@ export default function RegisterUI() {
         event.preventDefault();
         const requestData = { email, pseudo, password};
         try {
-            const response = await fetch("http://localhost:8080/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestData),
-              });
-              if (!response.ok) {
-                if (response.status === 409) {
-                  throw new Error("Cet email est déjà utilisé.");
-                }
-                throw new Error(`Erreur HTTP : ${response.status}`);
-              }
+            const data = await postRequest("/register", requestData);
 
-              const data = await response.json();
               if (data.message === 'Email de validation envoyé. Veuillez vérifier votre boîte de réception.') {
                 setSuccessMessage(data.message);
                 navigate("/login");
@@ -162,6 +151,17 @@ export default function RegisterUI() {
                     font= "normal"
                     rounded= "full">
                     {loading ? "Inscription en cours..." : "S'inscrire"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  width="auto"
+                  size="md"
+                  font="normal"
+                  rounded="full"
+                  onClick={() => navigate("/login")}
+                >
+                  Se connecter
                 </Button>
                 </form>
                 {successMessage && <p>{successMessage}</p>}
