@@ -22,9 +22,9 @@ class Post
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $created_at = null;
 
-    #[ORM\ManyToOne(inversedBy: 'post')]
+    #[ORM\ManyToOne(inversedBy: 'posts')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $User = null;
+    private ?User $user = null;
 
     private ?string $pseudo = null;
 
@@ -34,9 +34,19 @@ class Post
     #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'post', orphanRemoval: true)]
     private Collection $likes;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $media = null;
+
+    /**
+     * @var Collection<int, Comment>
+     */
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'post', orphanRemoval: true)]
+    private Collection $comments;
+
     public function __construct()
     {
         $this->likes = new ArrayCollection();
+        $this->comments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -77,22 +87,23 @@ class Post
 
     public function getUser(): ?User
     {
-        return $this->User;
+        return $this->user;
     }
 
-    public function setUser(?User $User): static
+    public function setUser(?User $user): static
     {
-        $this->User = $User;
-
+        $this->user = $user;
         return $this;
     }
+
     public function getPseudo(): ?string
     {
-        return $this->User ? $this->User->getPseudo() : null;
+        return $this->user ? $this->user->getPseudo() : null;
     }
+
     public function setPseudo(): ?string
     {
-        return $this->pseudo =$this->User->getPseudo();
+        return $this->pseudo = $this->user->getPseudo();
     }
 
     /**
@@ -125,5 +136,55 @@ class Post
         return $this;
     }
 
+    public function getMedia(): ?string
+    {
+        return $this->media;
+    }
 
+    public function setMedia(?string $media): static
+    {
+        $this->media = $media;
+
+        return $this;
+    }
+
+    public function isLikedBy(User $user): bool
+    {
+        foreach ($this->likes as $like) {
+            if ($like->getUser() === $user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(Comment $comment): static
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setPost($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            // set the owning side to null (unless already changed)
+            if ($comment->getPost() === $this) {
+                $comment->setPost(null);
+            }
+        }
+
+        return $this;
+    }
 }

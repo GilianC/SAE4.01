@@ -1,5 +1,5 @@
 import React from "react";
-import Poster from "../component/Post/Post.tsx";
+import Poster from "../component/Post/Post";
 
 export default function Admin() {
   return (

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { postRequest } from "../../lib/utils";
 import { Button } from "../../ui/Common/Button";
+import { LoginSkeleton } from "../../ui/Skeleton/LoginSkeleton";
 
 const Login = () => {
   const [form, setForm] = useState({
@@ -14,20 +15,18 @@ const Login = () => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Reset error message on new submit
+    setError("");
     setLoading(true);
-  
+
     try {
       const data = await postRequest("/login", form);
-      console.log("Réponse API :", data);
-      console.log("Réponse API :", data);
-  
       if (data?.token) {
-        console.log("Token récupéré :", data.token);
         localStorage.setItem("token", data.token);
-  
+        localStorage.setItem("user", JSON.stringify(data.user));
+
         if (data.user?.roles?.includes("ROLE_ADMIN")) {
           window.location.href = "/auth/admin";
         } else {
@@ -41,8 +40,11 @@ const Login = () => {
       setError("Une erreur est survenue lors de la connexion.");
     }
     setLoading(false);
-  }
+  };
 
+  if (loading) {
+    return <LoginSkeleton />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -75,17 +77,16 @@ const Login = () => {
             />
           </div>
           <div>
-             <Button
-                  type="submit"
-                  variant="primary"
-                  width= "auto"
-                  size= "md"
-                  font= "normal"
-                  rounded= "full">
-                  {loading ? "Connexion en cours..." : " Se connecter"}
-              </Button>
-             
-
+            <Button
+              type="submit"
+              variant="primary"
+              width="auto"
+              size="md"
+              font="normal"
+              rounded="full"
+            >
+              {loading ? "Connexion en cours..." : " Se connecter"}
+            </Button>
           </div>
         </form>
       </div>

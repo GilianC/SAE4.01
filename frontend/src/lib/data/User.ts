@@ -50,6 +50,29 @@ export function getUsers(): Promise<User[]> {
       return response.json();
     });
 }
+
+export const getUserId = () => {
+  const userData = localStorage.getItem('user');
+  if (userData) {
+      try {
+          const user = JSON.parse(userData);
+          return user.id;
+      } catch (error) {
+          console.error('Erreur lors de la lecture des données utilisateur:', error);
+          return null;
+      }
+  }
+  return null;
+};
+
+export const getUserAvatar = () => {
+  const userData = localStorage.getItem('user');
+  if (userData) {
+    const user = JSON.parse(userData);
+    return user.avatar;
+  }
+  return null;
+};
 /**
  * Met à jour un utilisateur.
  * @param id L'ID de l'utilisateur à mettre à jour

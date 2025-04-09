@@ -5,7 +5,7 @@ import { cn } from "../../lib/utils";
 interface ButtonProps {
   type: "button" | "submit";
   children: React.ReactNode;
-  variant?: "primary" | "danger" | "secondary" | "white";
+  variant?: "primary" | "danger" | "secondary" | "white" | "green";
   width?: "auto" | "full" | "small" | "medium";
   size?: "md" | "sm" | "lg";
   font?: "normal";

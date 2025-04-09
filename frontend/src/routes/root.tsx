@@ -10,7 +10,7 @@ export default function Root() {
     <Logo />
     
     <Outlet  />
-    {/* <Navigate to="/Prelogin" replace /> */}
+
       
     </>
   );

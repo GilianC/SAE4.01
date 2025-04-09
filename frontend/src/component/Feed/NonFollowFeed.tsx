@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { getRequest, deleteRequest, postRequest } from "../../lib/utils";
-import { PostCard } from "../../ui/Post/Post"; // Import du composant PostCard
+import { PostCard } from "../../ui/Post/Post";
 import { Post } from "../../lib/data/Post";
 import { Link } from "react-router-dom";
+import { EditPostModal } from "../../ui/Post/EditPostModal";
+
 export default function NonFollowFeed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   const fetchPosts = () => {
     setLoading(true);
@@ -24,7 +27,6 @@ export default function NonFollowFeed() {
   const handleLike = (id: number, liked: boolean, likes: number) => {
     postRequest(`/posts/${id}/like`)
       .then(() => {
-        // Met à jour les likes après avoir interagi avec le bouton
         setPosts(posts.map((post) =>
           post.id === id
             ? { ...post, likes: liked ? likes - 1 : likes + 1, liked: !liked }
@@ -40,6 +42,16 @@ export default function NonFollowFeed() {
         setPosts(posts.filter((post) => post.id !== id));
       })
       .catch(() => setError("Erreur de suppression"));
+  };
+
+  const handleEdit = (post: Post) => {
+    setEditingPost(post);
+  };
+
+  const handleSaveEdit = (updatedPost: Post) => {
+    setPosts(posts.map((post) =>
+      post.id === updatedPost.id ? updatedPost : post
+    ));
   };
 
   return (
@@ -62,13 +74,12 @@ export default function NonFollowFeed() {
         </label>
       </div>
 
-      {/* Affichage des posts */}
       {loading ? (
         <p className="text-center text-gray-500 mt-4">Chargement...</p>
       ) : error ? (
         <p className="text-center text-red-500 mt-4">{error}</p>
       ) : posts.length === 0 ? (
-        <p className="text-center text-gray-500 mt-4">Aucun post pour l'instant.</p>
+        <p className="text-center text-gray-500 mt-4">Aucun post disponible.</p>
       ) : (
         posts.map((post) => (
           <PostCard
@@ -76,10 +87,12 @@ export default function NonFollowFeed() {
             post={post}
             onDelete={handleDelete}
             onLike={handleLike}
+            onEdit={handleEdit}
+            image={post.media || ''}
           />
         ))
       )}
-      {/* Floating Button for New Post */}
+      
       <Link
         to="/auth/post"
         className="fixed bottom-16 right-4 bg-[#0D1B2A] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#1B263B] transition-all"
@@ -95,6 +108,14 @@ export default function NonFollowFeed() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
       </Link>
+
+      {editingPost && (
+        <EditPostModal
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 }

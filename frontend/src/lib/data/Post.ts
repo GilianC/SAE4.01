@@ -1,14 +1,14 @@
 export interface Post {
   id: number;
   content: string;
-  author: string; // Le pseudo de l'utilisateur qui a posté
-  authorId: number; // ID de l'utilisateur
-  avatar: string; // URL de l'avatar de l'utilisateur
+  author: string; 
+  authorId: number; 
+  avatar: string; 
   createdAt: string;
-  likes: number; // Assurez-vous que 'likes' est toujours un nombre
-  liked?: boolean; // Indique si l'utilisateur a aimé ce post
+  likes: number; 
+  liked?: boolean; 
+  media?: string;
 }
-
 /**
  * Récupère tous les posts depuis l'API.
  * Lance une erreur si le token n'est pas présent ou si la réponse n'est pas correcte.
@@ -18,7 +18,6 @@ export async function getPosts(): Promise<Post[]> {
   if (!token) {
     throw new Error("Token non trouvé, veuillez vous connecter.");
   }
-
   const response = await fetch("http://localhost:8080/posts", {
     method: "GET",
     headers: {
@@ -30,29 +29,54 @@ export async function getPosts(): Promise<Post[]> {
   if (!response.ok) {
     throw new Error(`Erreur HTTP: ${response.status}`);
   }
-
   const data = await response.json();
-  
-  // Assurer que le nombre de likes est bien un nombre
   if (!Array.isArray(data)) {
     throw new Error("Le format des données reçues n'est pas un tableau");
   }
 
-  // Assurer que chaque post a bien un champ likes sous forme de nombre
+
   return data.map((post: any) => ({
     ...post,
-    likes: Number(post.likes) || 0, // Cast explicite en nombre, sinon 0
+    likes: Number(post.likes) || 0, 
   }));
 }
 
 /**
- * Crée un post en envoyant le contenu au backend.
+ * Crée un post en envoyant le contenu et éventuellement un média au backend.
  * Retourne la réponse JSON de l'API.
  */
-export async function createPost(content: string): Promise<any> {
+export async function createPost(content: string, mediaFile?: File): Promise<any> {
   const token = localStorage.getItem("token");
   if (!token) {
     throw new Error("Token non trouvé, veuillez vous connecter.");
+  }
+  let mediaFilename = null;
+  if (mediaFile) {
+    try {
+      const formData = new FormData();
+      formData.append("file", mediaFile);
+      
+      const uploadResponse = await fetch("http://localhost:8080/upload", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Erreur d'upload: ${uploadResponse.status}`);
+      }
+      
+      const uploadData = await uploadResponse.json();
+      mediaFilename = uploadData.filename || (uploadData.url ? uploadData.url.split('/').pop() : uploadData);
+    } catch (error) {
+      throw new Error("Impossible d'uploader le média. Veuillez réessayer.");
+    }
+  }
+  const postData: any = { content };
+  if (mediaFilename) {
+    postData.media = mediaFilename;
   }
 
   const response = await fetch("http://localhost:8080/posts", {
@@ -61,7 +85,7 @@ export async function createPost(content: string): Promise<any> {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`,
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(postData),
   });
 
   if (!response.ok) {
